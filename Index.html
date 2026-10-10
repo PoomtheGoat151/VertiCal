@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>VertCal</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="VertCal">
+<meta name="theme-color" content="#0b1424">
+<link rel="apple-touch-icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' fill='%230b1424'/%3E%3Cpath d='M40 120 90 50l50 70' fill='none' stroke='%232dd4bf' stroke-width='16' stroke-linecap='round' stroke-linejoin='round'/%3E%3Cpath d='M40 150h100' stroke='%232dd4bf' stroke-width='12' stroke-linecap='round'/%3E%3C/svg%3E">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 180 180'%3E%3Crect width='180' height='180' rx='36' fill='%230b1424'/%3E%3Cpath d='M40 120 90 50l50 70' fill='none' stroke='%232dd4bf' stroke-width='16' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E">
+<style>
+:root{
+  --bg:#0b1424; --card:#132038; --card2:#1a2b49; --line:#24385c;
+  --text:#e8eef9; --muted:#8fa3c4; --accent:#2dd4bf; --accent2:#22d3ee; --danger:#f87171;
+  --top:env(safe-area-inset-top,0px); --bot:env(safe-area-inset-bottom,0px);
+}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%;background:var(--bg);color:var(--text);
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Segoe UI",Roboto,sans-serif;
+  -webkit-text-size-adjust:100%;overscroll-behavior:none}
+#app{max-width:480px;margin:0 auto;height:100%;display:flex;flex-direction:column;position:relative}
+.screen{display:none;flex:1;overflow-y:auto;padding:calc(var(--top) + 24px) 20px calc(var(--bot) + 96px)}
+.screen.active{display:block}
+.screen.noNav{padding-bottom:calc(var(--bot) + 24px)}
+h1{font-size:34px;margin:0 0 6px;letter-spacing:-.5px}
+h2{font-size:24px;margin:0 0 6px;letter-spacing:-.3px}
+h3{font-size:16px;margin:0 0 10px}
+p{color:var(--muted);line-height:1.5;margin:0 0 16px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:20px;padding:18px;margin-bottom:16px}
+.btn{display:flex;align-items:center;justify-content:center;gap:10px;width:100%;min-height:52px;border:0;border-radius:16px;
+  font-size:16px;font-weight:600;cursor:pointer;margin-bottom:12px;transition:transform .1s}
+.btn:active{transform:scale(.98)}
+.btn:focus-visible,input:focus-visible,.tab:focus-visible,.seg button:focus-visible{outline:2px solid var(--accent2);outline-offset:2px}
+.btn.primary{background:linear-gradient(135deg,var(--accent),var(--accent2));color:#04222a}
+.btn.light{background:#fff;color:#111}
+.btn.dark{background:#000;color:#fff;border:1px solid #333}
+.btn.ghost{background:transparent;color:var(--accent);border:1px solid var(--line)}
+.link{background:none;border:0;color:var(--accent);font-size:15px;text-decoration:underline;cursor:pointer;padding:8px 0}
+label{display:block;font-size:14px;color:var(--muted);margin-bottom:8px}
+input[type=number]{width:100%;background:var(--bg);border:1px solid var(--line);border-radius:14px;color:var(--text);
+  font-size:28px;font-weight:700;padding:14px 16px;margin-bottom:14px}
+.seg{display:flex;background:var(--bg);border:1px solid var(--line);border-radius:14px;padding:4px;margin-bottom:18px}
+.seg button{flex:1;border:0;background:none;color:var(--muted);font-size:16px;font-weight:600;padding:12px;border-radius:10px;cursor:pointer}
+.seg button.on{background:var(--accent);color:#04222a}
+.logo{width:84px;height:84px;margin:8vh 0 18px}
+.auth-wrap{text-align:center}
+.auth-wrap .logo{margin-left:auto;margin-right:auto}
+.big{font-size:56px;font-weight:800;color:var(--accent);line-height:1}
+.big small{font-size:20px;color:var(--muted);font-weight:600}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.stat{background:var(--card2);border-radius:16px;padding:14px}
+.stat b{display:block;font-size:24px}
+.stat span{font-size:13px;color:var(--muted)}
+.row{display:flex;justify-content:space-between;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}
+.row:last-child{border-bottom:0}
+.row .d{color:var(--muted);font-size:14px}
+.row .s{font-weight:700;font-size:18px}
+.row .s.best{color:var(--accent)}
+.row button{background:none;border:0;color:var(--danger);font-size:20px;cursor:pointer;padding:6px 10px}
+#chart{width:100%;height:120px;display:block;margin-bottom:6px}
+.empty{color:var(--muted);text-align:center;padding:16px 0}
+.day{border-left:3px solid var(--accent);padding-left:12px;margin-bottom:18px}
+.day h4{margin:0 0 4px;font-size:16px}
+.day .meta{font-size:13px;color:var(--muted);margin-bottom:8px}
+.ex{display:flex;justify-content:space-between;gap:10px;padding:7px 0;font-size:15px;border-bottom:1px solid var(--line)}
+.ex:last-child{border-bottom:0}
+.ex span{color:var(--accent);white-space:nowrap;font-weight:600}
+nav{position:absolute;left:0;right:0;bottom:0;display:none;background:rgba(11,20,36,.92);backdrop-filter:blur(14px);
+  -webkit-backdrop-filter:blur(14px);border-top:1px solid var(--line);padding:8px 8px calc(var(--bot) + 8px)}
+nav.show{display:flex}
+.tab{flex:1;background:none;border:0;color:var(--muted);font-size:12px;padding:8px 4px;cursor:pointer;display:flex;flex-direction:column;align-items:center;gap:4px;border-radius:12px}
+.tab.on{color:var(--accent)}
+.tab svg{width:24px;height:24px}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.7);display:none;align-items:flex-end;justify-content:center;z-index:10}
+.modal.open{display:flex}
+.sheet{background:var(--card);width:100%;max-width:480px;max-height:88%;overflow-y:auto;border-radius:24px 24px 0 0;padding:22px 20px calc(var(--bot) + 22px);animation:up .25s ease-out}
+@keyframes up{from{transform:translateY(40px);opacity:0}to{transform:none;opacity:1}}
+.dots{display:flex;gap:6px;justify-content:center;margin:12px 0}
+.dots i{width:8px;height:8px;border-radius:50%;background:var(--line)}
+.dots i.on{background:var(--accent)}
+.step-art{background:var(--bg);border-radius:16px;padding:10px;margin-bottom:14px}
+.step-art svg{width:100%;height:150px;display:block}
+.toast{position:fixed;left:50%;top:calc(var(--top) + 14px);transform:translate(-50%,-80px);background:var(--accent);color:#04222a;
+  font-weight:700;padding:12px 20px;border-radius:14px;transition:transform .3s;z-index:20}
+.toast.show{transform:translate(-50%,0)}
+@media (prefers-reduced-motion:reduce){.sheet{animation:none}.btn,.toast{transition:none}}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+.chips button{flex:1 1 40%;border:1px solid var(--line);background:var(--bg);color:var(--muted);border-radius:12px;padding:12px 8px;font-size:15px;font-weight:600;cursor:pointer}
+.chips button.on{background:var(--accent);color:#04222a;border-color:var(--accent)}
+#s-cam{display:none;position:fixed;inset:0;background:#000;z-index:15}
+#s-cam.open{display:flex;flex-direction:column}
+#cam-stage{position:relative;flex:1;min-height:0;overflow:hidden}
+#cam-box{position:absolute}
+#cam-box video,#cam-box canvas{position:absolute;left:0;top:0;width:100%;height:100%;object-fit:fill}
+#cam-box.mirror{transform:scaleX(-1)}
+.cam-top{flex:none;padding:calc(var(--top) + 10px) 12px 8px;display:flex;justify-content:space-between;align-items:center;color:#fff}
+.round{width:44px;height:44px;border-radius:50%;border:0;background:rgba(11,20,36,.75);color:#fff;font-size:22px;cursor:pointer}
+.tip{flex:none;margin:0 16px 8px;padding:10px 14px;border-radius:14px;font-weight:700;text-align:center;font-size:16px}
+.tip.ok{background:rgba(45,212,191,.92);color:#04222a}
+.tip.bad{background:rgba(248,113,113,.95);color:#2a0505}
+.cam-panel{flex:none;background:rgba(11,20,36,.92);padding:16px 20px calc(var(--bot) + 16px);border-radius:24px 24px 0 0}
+.cam-panel input{font-size:20px;padding:10px 14px;margin-bottom:10px}
+.cam-panel .big{text-align:center;margin-bottom:12px}
+</style>
+</head>
+<body>
+<div id="app">
+
+  <!-- Screen 1: Auth -->
+  <section id="s-auth" class="screen active noNav auth-wrap" aria-label="Sign in">
+    <svg class="logo" viewBox="0 0 180 180" aria-hidden="true"><rect width="180" height="180" rx="40" fill="#132038"/><path d="M40 120 90 50l50 70" fill="none" stroke="#2dd4bf" stroke-width="16" stroke-linecap="round" stroke-linejoin="round"/><path d="M40 150h100" stroke="#22d3ee" stroke-width="12" stroke-linecap="round"/></svg>
+    <h1>VertCal</h1>
+    <p>Measure your vertical jump and watch it climb.</p>
+    <div style="margin-top:36px">
+      <button class="btn light" data-auth="Google">
+        <svg width="20" height="20" viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.5 0 6.6 1.2 9 3.6l6.7-6.7C35.6 2.4 30.2 0 24 0 14.6 0 6.5 5.4 2.6 13.2l7.8 6.1C12.3 13.6 17.7 9.5 24 9.5z"/><path fill="#4285F4" d="M46.5 24.5c0-1.6-.1-3.1-.4-4.5H24v9h12.7c-.6 3-2.3 5.5-4.8 7.2l7.5 5.8c4.4-4.1 7.1-10.1 7.1-17.5z"/><path fill="#FBBC05" d="M10.4 28.7A14.5 14.5 0 0 1 9.5 24c0-1.6.3-3.2.9-4.7l-7.8-6.1A24 24 0 0 0 0 24c0 3.9.9 7.5 2.6 10.8l7.8-6.1z"/><path fill="#34A853" d="M24 48c6.5 0 11.9-2.1 15.9-5.8l-7.5-5.8c-2.1 1.4-4.9 2.3-8.4 2.3-6.3 0-11.7-4.1-13.6-9.8l-7.8 6.1C6.5 42.6 14.6 48 24 48z"/></svg>
+        Continue with Google
+      </button>
+      <button class="btn dark" data-auth="Apple">
+        <svg width="18" height="20" viewBox="0 0 384 512" fill="#fff"><path d="M318.7 268.7c-.2-36.7 16.4-64.4 50-84.8-18.8-26.9-47.2-41.7-84.7-44.6-35.5-2.8-74.3 20.7-88.5 20.7-15 0-49.4-19.7-76.4-19.7C63.3 141.2 4 184.8 4 273.5q0 39.3 14.4 81.2c12.8 36.7 59 126.7 107.2 125.2 25.2-.6 43-17.9 75.8-17.9 31.8 0 48.3 17.9 76.4 17.9 48.6-.7 90.4-82.5 102.6-119.3-65.2-30.7-61.7-90-61.7-91.9zm-56.6-164.2c27.3-32.4 24.8-61.9 24-72.5-24.1 1.4-52 16.4-67.9 34.9-17.5 19.8-27.8 44.3-25.6 71.9 26.1 2 49.9-11.4 69.5-34.3z"/></svg>
+        Continue with Apple
+      </button>
+    </div>
+    <p style="font-size:13px;margin-top:20px">Demo sign-in. Nothing leaves your phone. Your jumps are saved on this device only.</p>
+  </section>
+
+  <!-- Screen 2: Setup -->
+  <section id="s-setup" class="screen noNav" aria-label="Setup">
+    <h2>Set up your reach</h2>
+    <p>Pick your units and enter your standing reach. We'll measure every jump from here.</p>
+    <div class="card">
+      <label>Units</label>
+      <div class="seg" role="group" aria-label="Units">
+        <button id="u-in" class="on" type="button">Inches (in)</button>
+        <button id="u-cm" type="button">Centimeters (cm)</button>
+      </div>
+      <label for="reach">Standing reach (<span class="unit">in</span>)</label>
+      <input id="reach" type="number" inputmode="decimal" step="0.1" min="0" placeholder="0">
+      
+      <button class="link" id="open-help" type="button">Don't know your standing reach?</button>
+    </div>
+    <button class="btn primary" id="setup-next" type="button">Continue</button>
+  </section>
+
+  <!-- Screen 3: Tester -->
+  <section id="s-jump" class="screen" aria-label="Jump tester">
+    <h2>Jump tester</h2>
+    <p>Test with the camera, or mark the highest point you touch and enter it below.</p>
+    <div class="card">
+      <h3>Camera test</h3>
+      <div class="chips">
+        <button type="button" class="on" data-mode="Standing jump">Standing</button>
+        <button type="button" data-mode="Running jump">Running</button>
+        <button type="button" data-mode="Left foot">Left foot</button>
+        <button type="button" data-mode="Right foot">Right foot</button>
+      </div>
+      <button class="btn primary" id="cam-open" type="button" style="margin-bottom:0">Open camera</button>
+    </div>
+    <div class="card">
+      <label for="maxreach">Max jump reach (<span class="unit">in</span>)</label>
+      <input id="maxreach" type="number" inputmode="decimal" step="0.1" min="0" placeholder="0">
+      <div style="text-align:center;margin:6px 0 18px">
+        <div class="big"><span id="net">--</span> <small class="unit">in</small></div>
+        <div style="color:var(--muted);font-size:14px;margin-top:6px">Net vertical jump · reach <b id="reach-show">0</b> <span class="unit">in</span></div>
+      </div>
+      <button class="btn primary" id="save" type="button" style="margin-bottom:0">Save jump</button>
+    </div>
+    <div class="stats">
+      <div class="stat"><b id="st-best">--</b><span>Best</span></div>
+      <div class="stat"><b id="st-avg">--</b><span>Average</span></div>
+    </div>
+    <div class="card">
+      <h3>Progress</h3>
+      <svg id="chart" viewBox="0 0 300 120" preserveAspectRatio="none" aria-label="Jump history chart"></svg>
+      <div id="list"></div>
+    </div>
+    <button class="link" id="edit-setup" type="button">Change units or reach</button>
+  </section>
+
+  <!-- Screen 4: Plan -->
+  <section id="s-plan" class="screen" aria-label="Training plan">
+    <h2>Free training plan</h2>
+    <p>Phase 1: Foundation. Do it 3 days a week with a rest day between sessions. Weeks 1 to 4.</p>
+    <div class="card">
+      <div class="day"><h4>Day 1: Landing and lower body</h4><div class="meta">Warm up 8 min. Rest 90 sec between sets.</div>
+        <div class="ex">Bodyweight squats<span>3 × 12</span></div>
+        <div class="ex">Box step-ups<span>3 × 8 each leg</span></div>
+        <div class="ex">Pogo hops<span>3 × 20 sec</span></div>
+        <div class="ex">Stick-the-landing drops<span>3 × 6</span></div>
+        <div class="ex">Calf raises<span>3 × 15</span></div>
+      </div>
+      <div class="day"><h4>Day 2: Jump basics</h4><div class="meta">Warm up 8 min. Rest 2 min between sets.</div>
+        <div class="ex">Squat jumps<span>4 × 6</span></div>
+        <div class="ex">Countermovement jumps<span>4 × 5</span></div>
+        <div class="ex">Broad jumps<span>3 × 5</span></div>
+        <div class="ex">Glute bridges<span>3 × 12</span></div>
+        <div class="ex">Plank<span>3 × 30 sec</span></div>
+      </div>
+      <div class="day" style="margin-bottom:0"><h4>Day 3: Power and balance</h4><div class="meta">Warm up 8 min. Rest 90 sec between sets.</div>
+        <div class="ex">Box jumps (low box)<span>4 × 5</span></div>
+        <div class="ex">Lateral bounds<span>3 × 8 each side</span></div>
+        <div class="ex">Single-leg hops in place<span>3 × 8 each leg</span></div>
+        <div class="ex">Reverse lunges<span>3 × 10 each leg</span></div>
+        <div class="ex">Max-effort vertical jumps<span>5 × 3</span></div>
+      </div>
+    </div>
+    <p style="font-size:13px">Stop if you feel sharp pain. Land softly with bent knees. Check with a doctor before starting if you have injuries.</p>
+  </section>
+
+  <nav id="nav" aria-label="Main">
+    <button class="tab on" data-go="jump" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 16 12 5l8 11"/><path d="M4 20h16"/></svg>Jump</button>
+    <button class="tab" data-go="plan" type="button"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="4" width="16" height="16" rx="3"/><path d="M8 9h8M8 13h8M8 17h5"/></svg>Plan</button>
+  </nav>
+</div>
+
+<!-- Camera -->
+<section id="s-cam" aria-label="Camera test">
+  
+  <div class="cam-top"><button class="round" id="cam-close" type="button" aria-label="Close camera">&times;</button><b id="cam-title"></b><button class="round" id="cam-flip" type="button" aria-label="Flip camera">&#8635;</button><button class="round" id="cam-snd" type="button" aria-label="Voice tips on">&#128266;</button></div>
+  <div class="tip bad" id="cam-tip" role="status"></div>
+  <div id="cam-stage"><div id="cam-box"><video id="cam-video" playsinline muted autoplay></video><canvas id="cam-canvas"></canvas></div></div>
+  <div class="cam-panel">
+    <div id="cam-form">
+      <label for="cam-h">Your height (<span class="unit">in</span>)</label>
+      <input id="cam-h" type="number" inputmode="decimal" step="0.1" min="0" placeholder="0">
+      <button class="btn primary" id="cam-go" type="button" style="margin-bottom:0">Start</button>
+    </div>
+    <div id="cam-res" style="display:none">
+      <label id="cam-lbl" style="text-align:center"></label>
+      <div class="big" id="cam-val"></div>
+      <button class="btn primary" id="cam-use" type="button">Use this</button>
+      <button class="btn ghost" id="cam-retry" type="button" style="margin-bottom:0">Try again</button>
+    </div>
+  </div>
+</section>
+
+<!-- Help modal -->
+<div class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="m-title">
+  <div class="sheet">
+    <h3 id="m-title">How to measure standing reach</h3>
+    <div class="step-art" id="m-art"></div>
+    <p id="m-text" style="min-height:66px"></p>
+    <div class="dots" id="m-dots"></div>
+    <div style="display:flex;gap:10px;margin-top:6px">
+      <button class="btn ghost" id="m-back" type="button" style="margin:0">Back</button>
+      <button class="btn primary" id="m-next" type="button" style="margin:0">Next</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast" role="status"></div>
+
+<script>
+(function(){
+  var KEY='vertcal.v1';
+  var $=function(id){return document.getElementById(id)};
+  var state={user:null,unit:'in',reach:null,height:null,jumps:[]};
+  var lastMode='Manual';
+
+  function load(){
+    try{var s=JSON.parse(localStorage.getItem(KEY));if(s&&typeof s==='object'){state.user=s.user||null;state.unit=s.unit==='cm'?'cm':'in';state.reach=typeof s.reach==='number'?s.reach:null;state.jumps=Array.isArray(s.jumps)?s.jumps:[];state.height=typeof s.height==='number'?s.height:null;}}catch(e){}
+  }
+  function persist(){try{localStorage.setItem(KEY,JSON.stringify(state))}catch(e){toast('Storage is full or blocked')}}
+
+  function show(name){
+    ['auth','setup','jump','plan'].forEach(function(n){$('s-'+n).classList.toggle('active',n===name)});
+    var nav=(name==='jump'||name==='plan');
+    $('nav').classList.toggle('show',nav);
+    document.querySelectorAll('.tab').forEach(function(t){t.classList.toggle('on',t.dataset.go===name)});
+    $('s-'+name).scrollTop=0;
+    if(name==='jump')render();
+  }
+  function toast(msg){var t=$('toast');t.textContent=msg;t.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(function(){t.classList.remove('show')},2000)}
+  function fmt(n){return (Math.round(n*10)/10).toString()}
+
+  function setUnit(u,convert){
+    if(convert&&u!==state.unit){
+      var f=u==='cm'?2.54:1/2.54;
+      if(state.reach)state.reach=Math.round(state.reach*f*10)/10;
+      if(state.height)state.height=Math.round(state.height*f*10)/10;
+      state.jumps.forEach(function(j){j.reach=Math.round(j.reach*f*10)/10;j.max=Math.round(j.max*f*10)/10;j.net=Math.round(j.net*f*10)/10});
+    }
+    state.unit=u;
+    $('u-in').classList.toggle('on',u==='in');$('u-cm').classList.toggle('on',u==='cm');
+    document.querySelectorAll('.unit').forEach(function(e){e.textContent=u});
+    if(state.reach)$('reach').value=state.reach;
+  }
+
+  // Auth
+  document.querySelectorAll('[data-auth]').forEach(function(b){
+    b.addEventListener('click',function(){
+      state.user=b.dataset.auth;persist();
+      show(state.reach?'jump':'setup');
+    });
+  });
+
+  // Setup
+  $('u-in').onclick=function(){setUnit('in',true);persist()};
+  $('u-cm').onclick=function(){setUnit('cm',true);persist()};
+  $('setup-next').onclick=function(){
+    var v=parseFloat($('reach').value);
+    if(!(v>0)){toast('Enter your standing reach');$('reach').focus();return}
+    state.reach=v;persist();show('jump');
+  };
+  $('edit-setup').onclick=function(){show('setup')};
+
+  // Jump
+  function calc(){
+    var m=parseFloat($('maxreach').value);
+    $('reach-show').textContent=fmt(state.reach||0);
+    if(m>0&&state.reach){$('net').textContent=fmt(m-state.reach);return m-state.reach}
+    $('net').textContent='--';return null;
+  }
+  $('maxreach').addEventListener('input',function(){lastMode='Manual';calc()});
+  $('save').onclick=function(){
+    var m=parseFloat($('maxreach').value);
+    if(!(m>0)){toast('Enter your max jump reach');return}
+    var net=m-state.reach;
+    if(net<0){toast('Max reach must be above standing reach');return}
+    if(net>(state.unit==='in'?60:150)&&!confirm('That net jump looks too high ('+net.toFixed(1)+' '+state.unit+'). Save anyway?'))return;
+    state.jumps.push({date:new Date().toISOString(),reach:state.reach,max:m,net:Math.round(net*10)/10,mode:lastMode});
+    lastMode='Manual';persist();$('maxreach').value='';render();toast('Jump saved');
+  };
+
+  function render(){
+    document.querySelectorAll('.unit').forEach(function(e){e.textContent=state.unit});
+    calc();
+    var js=state.jumps,list=$('list');
+    var best=js.length?Math.max.apply(null,js.map(function(j){return j.net})):null;
+    $('st-best').textContent=best===null?'--':fmt(best)+' '+state.unit;
+    $('st-avg').textContent=js.length?fmt(js.reduce(function(a,j){return a+j.net},0)/js.length)+' '+state.unit:'--';
+    list.innerHTML='';
+    if(!js.length){list.innerHTML='<div class="empty">No jumps yet. Enter a max reach and tap Save jump.</div>'}
+    js.slice().reverse().forEach(function(j,ri){
+      var idx=js.length-1-ri,d=new Date(j.date);
+      var row=document.createElement('div');row.className='row';
+      row.innerHTML='<div><div class="s'+(j.net===best?' best':'')+'">'+fmt(j.net)+' '+state.unit+'</div><div class="d">'+d.toLocaleDateString(undefined,{month:'short',day:'numeric',year:'numeric'})+' at '+d.toLocaleTimeString(undefined,{hour:'numeric',minute:'2-digit'})+(j.mode&&j.mode!=='Manual'?' \u00b7 '+j.mode:'')+'</div></div>';
+      var x=document.createElement('button');x.type='button';x.setAttribute('aria-label','Delete jump');x.textContent='\u00d7';
+      x.onclick=function(){if(confirm('Delete this jump?')){state.jumps.splice(idx,1);persist();render()}};
+      row.appendChild(x);list.appendChild(row);
+    });
+    drawChart();
+  }
+
+  function drawChart(){
+    var svg=$('chart'),js=state.jumps.slice(-12);
+    if(js.length<2){svg.style.display='none';return}
+    svg.style.display='block';
+    var vals=js.map(function(j){return j.net}),mx=Math.max.apply(null,vals),mn=Math.min.apply(null,vals);
+    if(mx===mn){mx+=1;mn-=1}
+    var pts=vals.map(function(v,i){return [10+i*(280/(vals.length-1)),10+(1-(v-mn)/(mx-mn))*95]});
+    var path=pts.map(function(p,i){return (i?'L':'M')+p[0].toFixed(1)+' '+p[1].toFixed(1)}).join(' ');
+    svg.innerHTML='<path d="'+path+' L'+pts[pts.length-1][0]+' 118 L'+pts[0][0]+' 118Z" fill="rgba(45,212,191,.15)"/><path d="'+path+'" fill="none" stroke="#2dd4bf" stroke-width="2.5" stroke-linejoin="round" vector-effect="non-scaling-stroke"/>'+
+      pts.map(function(p){return '<ellipse cx="'+p[0]+'" cy="'+p[1]+'" rx="3.5" ry="3.5" fill="#22d3ee"/>'}).join('');
+  }
+
+  // Nav
+  document.querySelectorAll('.tab').forEach(function(t){t.onclick=function(){show(t.dataset.go)}});
+
+  // Help modal
+  var steps=[
+    {t:'Stand with your dominant side flat against a wall. Wear the shoes you will jump in, or go barefoot every time.',
+     a:'<svg viewBox="0 0 300 150"><rect x="20" y="10" width="14" height="130" fill="#24385c"/><circle cx="90" cy="35" r="12" fill="#8fa3c4"/><rect x="80" y="50" width="20" height="55" rx="8" fill="#8fa3c4"/><rect x="82" y="105" width="7" height="35" fill="#8fa3c4"/><rect x="91" y="105" width="7" height="35" fill="#8fa3c4"/><path d="M50 75h25" stroke="#2dd4bf" stroke-width="3" stroke-dasharray="4 4"/></svg>'},
+    {t:'Keep both feet flat on the floor. Reach the arm closest to the wall straight up as high as you can. Stay tall and do not rise onto your toes.',
+     a:'<svg viewBox="0 0 300 150"><rect x="20" y="10" width="14" height="130" fill="#24385c"/><circle cx="90" cy="45" r="12" fill="#8fa3c4"/><rect x="80" y="60" width="20" height="50" rx="8" fill="#8fa3c4"/><rect x="82" y="110" width="7" height="30" fill="#8fa3c4"/><rect x="91" y="110" width="7" height="30" fill="#8fa3c4"/><path d="M80 66 42 12" stroke="#8fa3c4" stroke-width="7" stroke-linecap="round"/></svg>'},
+    {t:'Press your fingertips against the wall and mark the highest point with chalk, tape, or a sticky note. A friend can help.',
+     a:'<svg viewBox="0 0 300 150"><rect x="20" y="10" width="14" height="130" fill="#24385c"/><rect x="34" y="14" width="30" height="5" fill="#2dd4bf"/><path d="M80 66 42 16" stroke="#8fa3c4" stroke-width="7" stroke-linecap="round"/><circle cx="90" cy="45" r="12" fill="#8fa3c4"/><rect x="80" y="60" width="20" height="50" rx="8" fill="#8fa3c4"/></svg>'},
+    {t:'Measure from the floor straight up to your mark with a tape measure. That number is your standing reach. Type it in and tap Continue.',
+     a:'<svg viewBox="0 0 300 150"><rect x="20" y="10" width="14" height="130" fill="#24385c"/><rect x="34" y="14" width="30" height="5" fill="#2dd4bf"/><path d="M110 17v123" stroke="#22d3ee" stroke-width="3"/><path d="M104 17h12M104 140h12" stroke="#22d3ee" stroke-width="3"/><text x="130" y="85" fill="#e8eef9" font-size="16" font-family="sans-serif">Floor to mark</text></svg>'}
+  ];
+  var si=0;
+  function drawStep(){
+    $('m-art').innerHTML=steps[si].a;$('m-text').textContent='Step '+(si+1)+' of '+steps.length+'. '+steps[si].t;
+    $('m-dots').innerHTML=steps.map(function(_,i){return '<i class="'+(i===si?'on':'')+'"></i>'}).join('');
+    $('m-back').style.visibility=si?'visible':'hidden';
+    $('m-next').textContent=si===steps.length-1?'Done':'Next';
+  }
+  function closeM(){$('modal').classList.remove('open')}
+  $('open-help').onclick=function(){si=0;drawStep();$('modal').classList.add('open')};
+  $('m-back').onclick=function(){if(si>0){si--;drawStep()}};
+  $('m-next').onclick=function(){if(si<steps.length-1){si++;drawStep()}else{closeM();$('reach').focus()}};
+  $('modal').addEventListener('click',function(e){if(e.target===$('modal'))closeM()});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')closeM()});
+
+  // Camera analysis
+  var cam={mode:'reach',jmode:'Standing jump',facing:'user',stream:null,pose:null,raf:0,phase:'idle',cal:[],tips:[],t0:0,val:null,lastT:-1,D0:1,G:1};
+  var video=$('cam-video'),cv=$('cam-canvas'),cx=cv.getContext('2d');
+  var HINTS={'Standing jump':'Feet shoulder width. Starting by itself, then jump straight up.','Running jump':'Start at one end of your run, side-on to the phone. It starts by itself, then run across and jump.','Left foot':'Jump off your LEFT foot only.','Right foot':'Jump off your RIGHT foot only.'};
+  var LINES=[[11,12],[11,13],[13,15],[12,14],[14,16],[11,23],[12,24],[23,24],[23,25],[25,27],[24,26],[26,28],[27,31],[28,32],[15,19],[16,20]];
+  var tts={on:true,last:'',t:0};
+  function say(text,ok){
+    if(!tts.on||!window.speechSynthesis)return;
+    var m=text.match(/\u2026\s*(\d)$/),s=m?m[1]:text,now=Date.now();
+    if(s===tts.last&&(ok||now-tts.t<5000))return;
+    tts.last=s;tts.t=now;
+    try{speechSynthesis.cancel();var u=new SpeechSynthesisUtterance(s);u.rate=1.05;speechSynthesis.speak(u)}catch(e){}
+  }
+  function setTip(t,ok){var e=$('cam-tip');e.textContent=t;e.className='tip '+(ok?'ok':'bad');say(t,ok)}
+  function med(a){var s=a.slice().sort(function(x,y){return x-y});return s[Math.floor(s.length/2)]}
+  function median3(a){return a.map(function(_,i){return i&&i<a.length-1?med([a[i-1],a[i],a[i+1]]):a[i]})}
+  function median5(a){return a.slice(2,a.length-2).map(function(_,i){return med(a.slice(i,i+5))})}
+
+  async function startStream(){
+    stopStream();
+    cam.stream=await navigator.mediaDevices.getUserMedia({video:{facingMode:cam.facing,width:{ideal:1280},height:{ideal:720}},audio:false});
+    video.srcObject=cam.stream;await video.play();
+    $('cam-box').classList.toggle('mirror',cam.facing==='user');fit();
+  }
+  function fit(){
+    var st=$('cam-stage'),b=$('cam-box'),vw=video.videoWidth,vh=video.videoHeight;
+    if(!vw||!vh)return;
+    var W=st.clientWidth,H=st.clientHeight,s=Math.min(W/vw,H/vh),w=Math.floor(vw*s),h=Math.floor(vh*s);
+    b.style.width=w+'px';b.style.height=h+'px';b.style.left=Math.floor((W-w)/2)+'px';b.style.top=Math.floor((H-h)/2)+'px';
+  }
+  window.addEventListener('resize',fit);video.addEventListener('loadedmetadata',fit);
+  function stopStream(){if(cam.stream)cam.stream.getTracks().forEach(function(t){t.stop()});cam.stream=null}
+  function closeCam(){if(window.speechSynthesis)speechSynthesis.cancel();tts.last='';cancelAnimationFrame(cam.raf);stopStream();cam.phase='idle';$('s-cam').classList.remove('open')}
+  async function openCam(mode){
+    cam.mode=mode;cam.phase='idle';
+    $('s-cam').classList.add('open');
+    $('cam-title').textContent=mode==='reach'?'Standing reach':cam.jmode;
+    $('cam-h').value=state.height||'';
+    $('cam-form').style.display='block';$('cam-res').style.display='none';
+    $('cam-go').disabled=true;$('cam-go').textContent='Start';
+    document.querySelectorAll('.unit').forEach(function(e){e.textContent=state.unit});
+    setTip('Starting camera\u2026',false);
+    try{
+      await startStream();
+      if(!cam.pose){setTip('Loading body tracker\u2026',false);cam.pose=await window.vcLoadPose()}
+      cancelAnimationFrame(cam.raf);loop();
+    }catch(e){
+      setTip(e&&e.name==='NotAllowedError'?'Camera blocked. Allow camera access in your browser settings.':'Could not start the camera or body tracker. Use HTTPS, check your connection, or enter it by hand.',false);
+    }
+  }
+
+  function measure(lm){
+    if(!lm)return{tip:"I can't see you. Step into the frame."};
+    var v=function(i){return lm[i].visibility==null?1:lm[i].visibility};
+    var up=lm[19].y<lm[20].y,ti=up?19:20,sh=up?11:12,el=up?13:14,wr=up?15:16,fy=Math.max(lm[29].y,lm[30].y,lm[31].y,lm[32].y),ey=(lm[2].y+lm[5].y)/2,ty=lm[ti].y,hv=v(ti);
+    var vw=video.videoWidth||1,vh=video.videoHeight||1,ax=(lm[sh].x-lm[el].x)*vw,ay=(lm[sh].y-lm[el].y)*vh,bx=(lm[wr].x-lm[el].x)*vw,by=(lm[wr].y-lm[el].y)*vh;
+    var elbow=Math.acos(Math.max(-1,Math.min(1,(ax*bx+ay*by)/((Math.hypot(ax,ay)*Math.hypot(bx,by))||1))))*180/Math.PI;
+    var fv=(v(29)+v(30)+v(31)+v(32))/4,frac=fy-ey,reach=cam.mode==='reach';
+    var m={eyeY:ey,footY:fy,tipY:ty,hv:hv,ank:Math.max(lm[27].y,lm[28].y),av:Math.min(v(27),v(28)),hip:(lm[23].y+lm[24].y)/2,hv2:Math.min(v(23),v(24))};
+    if(v(0)<0.5||lm[0].y<0.03)m.tip="Can't see your head. Step back or tilt the phone up.";
+    else if(fv<0.5||fy>0.97)m.tip="Can't see your feet. Step back or tilt the phone down.";
+    else if(frac<(reach?0.45:(cam.jmode==='Running jump'?0.16:0.3)))m.tip='Too far away. Step closer.';
+    else if(frac>(reach?0.68:0.5))m.tip='Too close. Step back so there is room above your hand.';
+    else if(reach&&ty>ey-0.05)m.tip='Raise one arm straight up, hand open.';
+    else if(reach&&ty<0.02)m.tip='Your hand is cut off. Step back.';
+    else if(reach&&(hv<0.5||elbow<155))m.tip='Straighten your arm fully overhead.';
+    return m;
+  }
+  function draw(lm){
+    cx.clearRect(0,0,cv.width,cv.height);
+    if(!lm)return;
+    var W=cv.width,H=cv.height;
+    cx.strokeStyle='#2dd4bf';cx.lineWidth=Math.max(3,W/160);cx.lineCap='round';
+    LINES.forEach(function(l){cx.beginPath();cx.moveTo(lm[l[0]].x*W,lm[l[0]].y*H);cx.lineTo(lm[l[1]].x*W,lm[l[1]].y*H);cx.stroke()});
+    cx.fillStyle='#22d3ee';
+    [0,19,20,29,30,31,32].forEach(function(i){cx.beginPath();cx.arc(lm[i].x*W,lm[i].y*H,Math.max(5,W/100),0,6.3);cx.fill()});
+  }
+  function loop(){
+    cam.raf=requestAnimationFrame(loop);
+    if(video.readyState<2||!cam.pose||video.currentTime===cam.lastT)return;
+    cam.lastT=video.currentTime;
+    if(cv.width!==video.videoWidth){cv.width=video.videoWidth;cv.height=video.videoHeight;fit()}
+    var r=cam.pose.detectForVideo(video,performance.now());
+    var lm=r.landmarks&&r.landmarks[0];
+    draw(lm);step(measure(lm));
+  }
+  function step(m){
+    var now=performance.now(),reach=cam.mode==='reach';
+    if(cam.phase==='idle'){
+      if(now<cam.hold)return;
+      if(!heightOk()){setTip('Enter your height first, then step back.',false);return}
+      setTip(m.tip||(reach?'Looking good. Hold your arm up. Starting by itself.':HINTS[cam.jmode]),!m.tip);
+      if(m.tip)cam.okSince=0;
+      else{if(!cam.okSince)cam.okSince=now;if(now-cam.okSince>1500){cam.okSince=0;beginCount();return}}
+      $('cam-go').disabled=!!m.tip;
+    }else if(cam.phase==='count'){
+      if(m.tip){cam.t0=now;cam.cal=[];setTip(m.tip,false);return}
+      cam.cal.push(m);
+      var left=3-(now-cam.t0)/1000;
+      if(left>0){setTip((reach?'Hold your arm up and stay still\u2026 ':'Stand still\u2026 ')+Math.ceil(left),true);return}
+      if(reach){
+        var h=state.height;
+        var vals=cam.cal.map(function(c){return .936*h*(c.footY-c.tipY)/(c.footY-c.eyeY)}).sort(function(a,b){return a-b}),n=vals.length;
+        if(n<10||vals[Math.floor(n*.9)]-vals[Math.floor(n*.1)]>0.04*h){cam.phase='idle';cam.hold=now+4000;cam.okSince=0;setTip('You moved too much. Hold still and try again.',false);return}
+        finish(vals[Math.floor(n/2)]);
+      }else{
+        cam.D0=med(cam.cal.map(function(c){return c.ank-c.eyeY}));
+        cam.G=med(cam.cal.map(function(c){return c.ank}));cam.Hc=med(cam.cal.map(function(c){return c.hip}));cam.hips=[];
+        cam.tips=[];cam.phase='rec';cam.t0=now;
+        $('cam-go').textContent='Stop';$('cam-go').disabled=false;
+      }
+    }else if(cam.phase==='rec'){
+      if(m.ank!=null&&m.av>0.3)cam.tips.push(m.ank);
+      if(m.hip!=null&&m.hv2>0.3)cam.hips.push(m.hip);
+      setTip(cam.jmode==='Running jump'?'Go! Run, jump and reach high.':'Go! Jump and reach as high as you can.',true);
+      if(now-cam.t0>8000)endRec();
+    }
+  }
+  function heightOk(){var h=parseFloat($('cam-h').value);return h>=(state.unit==='in'?40:100)&&h<=(state.unit==='in'?100:250)}
+  function beginCount(){if(!heightOk())return false;state.height=parseFloat($('cam-h').value);persist();cam.phase='count';cam.t0=performance.now();cam.cal=[];$('cam-go').disabled=true;return true}
+  function endRec(){
+    var t=median5(cam.tips),hp=median5(cam.hips);
+    if(t.length<5){cam.phase='idle';$('cam-go').textContent='Start';setTip('I lost you. Stay in frame and try again.',false);cam.hold=performance.now()+4000;cam.okSince=0;return}
+    var aPx=cam.G-Math.min.apply(null,t),hPx=hp.length>=5?cam.Hc-Math.min.apply(null,hp):aPx,rise=.897*state.height*Math.min(aPx,hPx)/cam.D0,cap=state.unit==='in'?60:150;
+    if(!(rise>=(state.unit==='in'?2:5))||rise>cap){cam.phase='idle';cam.hold=performance.now()+4000;cam.okSince=0;$('cam-go').textContent='Start';setTip(rise>cap?'That reading looks wrong. Stay side-on, fully in frame, and try again.':'I did not see a jump. Jump higher and try again.',false);return}
+    finish(state.reach+rise);
+  }
+  function finish(v){
+    $('cam-go').textContent='Start';
+    if(!(v>0)||(cam.mode==='jump'&&v<=state.reach)){cam.phase='idle';setTip("Couldn't read a clear result. Follow the tips and try again.",false);cam.hold=performance.now()+4000;cam.okSince=0;return}
+    cam.phase='done';cam.val=Math.round(v*10)/10;
+    $('cam-form').style.display='none';$('cam-res').style.display='block';
+    $('cam-val').style.fontSize='32px';$('cam-val').textContent=cam.val+' '+state.unit+' ('+(state.unit==='in'?Math.round(cam.val*2.54)+' cm':Math.round(cam.val/2.54)+' in')+')';
+    if(cam.mode==='reach'&&(cam.val/state.height<1.25||cam.val/state.height>1.5))toast('Looks off for your height. Check it with a tape measure.');
+    $('cam-lbl').textContent=cam.mode==='reach'?'Standing reach':'Max jump reach \u00b7 '+cam.jmode+' \u00b7 net +'+(cam.val-state.reach).toFixed(1)+' '+state.unit;
+    setTip('Done. '+(cam.mode==='reach'?'Standing reach '+cam.val:'Vertical jump '+(cam.val-state.reach).toFixed(1))+' '+(state.unit==='in'?'inches':'centimeters')+'. Walk to your phone and tap Use this.',true);
+  }
+
+  $('cam-go').onclick=function(){
+    if(cam.phase==='rec'){endRec();return}
+    var h=parseFloat($('cam-h').value),lo=state.unit==='in'?40:100,hi=state.unit==='in'?100:250;
+    if(!(h>=lo&&h<=hi)){toast('Enter your height in '+state.unit);$('cam-h').focus();return}
+    state.height=h;persist();
+    cam.phase='count';cam.t0=performance.now();cam.cal=[];$('cam-go').disabled=true;
+  };
+  $('cam-use').onclick=function(){
+    if(cam.mode==='reach'){state.reach=cam.val;$('reach').value=cam.val;persist();toast('Standing reach set')}
+    else{$('maxreach').value=cam.val;lastMode=cam.jmode;calc();toast('Max reach filled in. Tap Save jump.')}
+    closeCam();
+  };
+  $('cam-retry').onclick=function(){cam.phase='idle';$('cam-form').style.display='block';$('cam-res').style.display='none'};
+  $('cam-close').onclick=closeCam;
+  $('cam-snd').onclick=function(){
+    tts.on=!tts.on;tts.last='';
+    this.innerHTML=tts.on?'&#128266;':'&#128263;';
+    this.setAttribute('aria-label',tts.on?'Voice tips on':'Voice tips off');
+    if(!tts.on&&window.speechSynthesis)speechSynthesis.cancel();
+  };
+  $('cam-flip').onclick=async function(){cam.facing=cam.facing==='user'?'environment':'user';try{await startStream()}catch(e){}};
+  
+  $('cam-open').onclick=function(){if(!state.reach){toast('Set your standing reach first');show('setup');return}openCam('jump')};
+  document.querySelectorAll('[data-mode]').forEach(function(b){b.onclick=function(){
+    cam.jmode=b.dataset.mode;
+    document.querySelectorAll('[data-mode]').forEach(function(x){x.classList.toggle('on',x===b)});
+  }});
+
+  // Init
+  load();setUnit(state.unit,false);
+  if(state.user)show(state.reach?'jump':'setup');
+})();
+</script>
+<script type="module">
+window.vcLoadPose=async function(){
+  var V='https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.14';
+  var m=await import(V+'/+esm');
+  var fs=await m.FilesetResolver.forVisionTasks(V+'/wasm');
+  var model='https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task';
+  var opts=function(d){return{baseOptions:{modelAssetPath:model,delegate:d},runningMode:'VIDEO',numPoses:1}};
+  try{return await m.PoseLandmarker.createFromOptions(fs,opts('GPU'))}
+  catch(e){return await m.PoseLandmarker.createFromOptions(fs,opts('CPU'))}
+};
+</script>
+</body>
+</html>
